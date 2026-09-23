@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Gerekli dosyaları kopyala
-COPY requirements.txt .
+COPY Requirements.txt .
 
 # Kütüphaneleri yükle (Flask dahil)
 RUN pip install --no-cache-dir -r Requirements.txt
