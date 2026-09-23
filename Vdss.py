@@ -207,7 +207,7 @@ def create_main_menu(is_admin=False):
       InlineKeyboardButton("❓ SSS (Nasıl Kullanılır?)", callback_data="faq_menu"),
       InlineKeyboardButton("🎫 Destek / Ticket", callback_data="create_ticket"),
   )
-  markup.add(InlineKeyboardButton("👨‍💻 ADMİN", url="http://t.me/CxmeBackk"))
+  markup.add(InlineKeyboardButton("👨‍💻 ADMİN", url="http://t.me/YxceBerrxkk"))
   if is_admin:
     markup.add(InlineKeyboardButton("⚙️ Admin Paneli", callback_data="admin_panel"))
   return markup
