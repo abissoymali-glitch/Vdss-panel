@@ -53,16 +53,16 @@ except ImportError:
   except Exception:
     HAS_PSUTIL = False
 
-API_KEY = "8061030797:AAH5YRXyy0uiLi0hM5YgbIjZbF2Bup2gXb0"
-ADMIN_ID = 8687183701
+API_KEY = "8845300809:AAE_Xg98S1nL8G0Ew-aRefsGDT7h2AeYZ1I"
+ADMIN_ID = 8756215620
 SCRIPT_FOLDER = "user_scripts"
 DATA_FILE = "user_data.json"
 SETTINGS_FILE = "settings.json"
 BANNED_FILE = "banned_users.json"
 USERS_FILE = "all_users.json"
 
-CHANNEL_ID = -1003820083403
-CHANNEL_URL = "https://t.me/YxceBerkkx"
+CHANNEL_ID = -1004370274573
+CHANNEL_URL = "https://t.me/+qyd2S7WPD4ZlMzdk"
 
 bot = telebot.TeleBot(API_KEY)
 os.makedirs(SCRIPT_FOLDER, exist_ok=True)
@@ -73,43 +73,53 @@ lock = Lock()
 admin_states = {}
 
 if os.path.exists(DATA_FILE):
-  with open(DATA_FILE, "r") as f:
-    user_data = json.load(f)
+  try:
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+      loaded_data = json.load(f)
+      if isinstance(loaded_data, dict):
+        for uid, scripts in loaded_data.items():
+          if isinstance(scripts, dict):
+            user_data[uid] = {}
+            for sid, info in scripts.items():
+              if isinstance(info, dict):
+                user_data[uid][sid] = info
+  except Exception:
+    user_data = {}
 
 maintenance_mode = False
 if os.path.exists(SETTINGS_FILE):
-  with open(SETTINGS_FILE, "r") as f:
+  with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
     maintenance_mode = json.load(f).get("maintenance", False)
 
 banned_users = []
 if os.path.exists(BANNED_FILE):
-  with open(BANNED_FILE, "r") as f:
+  with open(BANNED_FILE, "r", encoding="utf-8") as f:
     banned_users = json.load(f)
 
 all_users = set()
 if os.path.exists(USERS_FILE):
-  with open(USERS_FILE, "r") as f:
+  with open(USERS_FILE, "r", encoding="utf-8") as f:
     all_users = set(json.load(f))
 
 
 def save_data():
-  with open(DATA_FILE, "w") as f:
-    json.dump(user_data, f)
+  with open(DATA_FILE, "w", encoding="utf-8") as f:
+    json.dump(user_data, f, ensure_ascii=False, indent=4)
 
 
 def save_settings():
-  with open(SETTINGS_FILE, "w") as f:
-    json.dump({"maintenance": maintenance_mode}, f)
+  with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+    json.dump({"maintenance": maintenance_mode}, f, ensure_ascii=False)
 
 
 def save_banned():
-  with open(BANNED_FILE, "w") as f:
-    json.dump(banned_users, f)
+  with open(BANNED_FILE, "w", encoding="utf-8") as f:
+    json.dump(banned_users, f, ensure_ascii=False)
 
 
 def save_users():
-  with open(USERS_FILE, "w") as f:
-    json.dump(list(all_users), f)
+  with open(USERS_FILE, "w", encoding="utf-8") as f:
+    json.dump(list(all_users), f, ensure_ascii=False)
 
 
 def add_user(user_id):
@@ -122,7 +132,7 @@ def stop_specific_script(user_id, script_id):
   str_uid = str(user_id)
   if str_uid in user_data and script_id in user_data[str_uid]:
     info = user_data[str_uid][script_id]
-    if "pid" in info:
+    if isinstance(info, dict) and "pid" in info:
       try:
         if HAS_PSUTIL:
           p = psutil.Process(info["pid"])
@@ -133,13 +143,13 @@ def stop_specific_script(user_id, script_id):
           os.kill(info["pid"], signal.SIGTERM)
       except Exception:
         pass
-    file_path = info.get("file")
+    file_path = info.get("file") if isinstance(info, dict) else None
     if file_path and os.path.exists(file_path):
       try:
         os.remove(file_path)
       except Exception:
         pass
-    log_path = info.get("log_file")
+    log_path = info.get("log_file") if isinstance(info, dict) else None
     if log_path and os.path.exists(log_path):
       try:
         os.remove(log_path)
@@ -190,13 +200,14 @@ def create_main_menu(is_admin=False):
       InlineKeyboardButton("📂 Botlarım / Yönet", callback_data="show_file"),
   )
   markup.add(
+      InlineKeyboardButton("👤 Profilim", callback_data="my_profile"),
       InlineKeyboardButton("📊 Liderlik Tablosu", callback_data="leaderboard"),
-      InlineKeyboardButton("❓ SSS (Nasıl Kullanılır?)", callback_data="faq_menu"),
   )
   markup.add(
+      InlineKeyboardButton("❓ SSS (Nasıl Kullanılır?)", callback_data="faq_menu"),
       InlineKeyboardButton("🎫 Destek / Ticket", callback_data="create_ticket"),
-      InlineKeyboardButton("👨‍💻 ADMİN", url="http://t.me/CxmeBackk"),
   )
+  markup.add(InlineKeyboardButton("👨‍💻 ADMİN", url="http://t.me/CxmeBackk"))
   if is_admin:
     markup.add(InlineKeyboardButton("⚙️ Admin Paneli", callback_data="admin_panel"))
   return markup
@@ -394,7 +405,7 @@ def handle_document(message):
 
     try:
       log_path = local_path + ".log"
-      with open(log_path, "w") as log_file:
+      with open(log_path, "w", encoding="utf-8") as log_file:
         proc = subprocess.Popen(
             [sys.executable, local_path],
             stdout=log_file,
@@ -404,7 +415,7 @@ def handle_document(message):
 
       time.sleep(2)
       if proc.poll() is not None:
-        with open(log_path, "r") as log_file:
+        with open(log_path, "r", encoding="utf-8") as log_file:
           err_output = log_file.read()
         bot.reply_to(
             message, f"❌ Bot hemen kapandı! Hata detayı:\n{err_output[:500]}"
@@ -591,6 +602,29 @@ def handle_callback(call):
       )
     return
 
+  if data == "my_profile":
+    user_scripts = user_data.get(str(user_id), {})
+    active_count = len(user_scripts)
+    user_name = call.from_user.first_name or "İsimsiz"
+    profile_text = (
+        f"👤 **Profil Bilgileriniz**\n\n"
+        f"📌 **Adınız:** `{user_name}`\n"
+        f"🆔 **Telegram ID:** `{user_id}`\n"
+        f"⚡ **Aktif Bot Sayınız:** `{active_count}`"
+    )
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("🔙 Ana Menüye Dön", callback_data="back_to_main_user")
+    )
+    bot.edit_message_text(
+        profile_text,
+        call.message.chat.id,
+        call.message.message_id,
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+    return
+
   if data == "faq_menu":
     faq_text = (
         "❓ **Sık Sorulan Sorular**\n\n**S: Birden fazla bot çalıştırabilir"
@@ -658,7 +692,7 @@ def handle_callback(call):
   if data.startswith("log_bot_"):
     script_id = data.split("_")[2]
     user_scripts = user_data.get(str(user_id), {})
-    if script_id in user_scripts:
+    if script_id in user_scripts and isinstance(user_scripts[script_id], dict):
       log_path = user_scripts[script_id].get("log_file")
       if log_path and os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8", errors="ignore") as lf:
@@ -667,11 +701,11 @@ def handle_callback(call):
           log_content = "Log dosyası henüz boş."
         else:
           if len(log_content) > 3500:
-            log_content = log_content[-3500:]  # Son kısımları göster
+            log_content = log_content[-3500:]
         bot.answer_callback_query(call.id)
         bot.send_message(
             user_id,
-            f"📋 **Bot Logları ({user_scripts[script_id]['file_name']}):**\n\n```text\n{log_content}\n```",
+            f"📋 **Bot Logları ({user_scripts[script_id].get('file_name', 'Bot')}):**\n\n```text\n{log_content}\n```",
             parse_mode="Markdown",
         )
       else:
@@ -702,15 +736,17 @@ def handle_callback(call):
       markup = InlineKeyboardMarkup()
       text = "📂 **Aktif Botlarınız:**\n\n"
       for sid, info in user_scripts.items():
-        text += f"📌 `{info['file_name']}` (PID: {info['pid']})\n"
-        markup.add(
-            InlineKeyboardButton(
-                f"📋 Log: {info['file_name']}", callback_data=f"log_bot_{sid}"
-            ),
-            InlineKeyboardButton(
-                f"🗑️ Durdur", callback_data=f"stop_bot_{sid}"
-            ),
-        )
+        if isinstance(info, dict):
+          text += f"📌 `{info.get('file_name', 'Bot')}` (PID: {info.get('pid', 'N/A')})\n"
+          markup.add(
+              InlineKeyboardButton(
+                  f"📋 Log: {info.get('file_name', 'Bot')}",
+                  callback_data=f"log_bot_{sid}",
+              ),
+              InlineKeyboardButton(
+                  f"🗑️ Durdur", callback_data=f"stop_bot_{sid}"
+              ),
+          )
       markup.add(
           InlineKeyboardButton("🔙 Ana Menü", callback_data="back_to_main_user")
       )
@@ -761,18 +797,20 @@ def handle_callback(call):
       text = f"⚡ **Tüm Aktif Çalışan Botlar ({total_active}):**\n\n"
       for uid, bots in user_data.items():
         for sid, info in bots.items():
-          cpu_usage, memory_usage = "N/A", "N/A"
-          if HAS_PSUTIL:
-            try:
-              p = psutil.Process(info["pid"])
-              cpu_usage = f"{p.cpu_percent(interval=0.1):.1f}"
-              memory_usage = f"{p.memory_percent():.1f}"
-            except Exception:
-              pass
-          text += (
-              f"👤 User: `{uid}` | Bot: `{info['file_name']}`\n⚙️ PID:"
-              f" `{info['pid']}` | CPU: %`{cpu_usage}` RAM: %`{memory_usage}`\n------------------\n"
-          )
+          if isinstance(info, dict):
+            cpu_usage, memory_usage = "N/A", "N/A"
+            if HAS_PSUTIL and "pid" in info:
+              try:
+                p = psutil.Process(info["pid"])
+                cpu_usage = f"{p.cpu_percent(interval=0.1):.1f}"
+                memory_usage = f"{p.memory_percent():.1f}"
+              except Exception:
+                pass
+            text += (
+                f"👤 User: `{uid}` | Bot: `{info.get('file_name', 'Bot')}`\n⚙️"
+                f" PID: `{info.get('pid', 'N/A')}` | CPU: %`{cpu_usage}` RAM:"
+                f" %`{memory_usage}`\n------------------\n"
+            )
       if total_active == 0:
         text = "ℹ️ Aktif bot bulunmuyor."
       bot.answer_callback_query(call.id)
@@ -836,35 +874,71 @@ def handle_callback(call):
       markup = InlineKeyboardMarkup()
       text = "📂 **Aktif Botlarınız ve Yönetim Paneli:**\n\n"
       for sid, info in user_scripts.items():
-        running_time = time.strftime(
-            "%H:%M:%S", time.localtime(info["time"])
-        )
-        text += (
-            f"📌 **{info['file_name']}**\n   ⚙️ PID: `{info['pid']}` | ⏱️"
-            f" `{running_time}`\n\n"
-        )
-        markup.add(
-            InlineKeyboardButton(
-                f"📋 Log: {info['file_name']}", callback_data=f"log_bot_{sid}"
-            ),
-            InlineKeyboardButton(
-                f"🗑️ Durdur / Sil", callback_data=f"stop_bot_{sid}"
-            ),
-        )
+        if isinstance(info, dict):
+          running_time = time.strftime(
+              "%H:%M:%S", time.localtime(info.get("time", time.time()))
+          )
+          text += (
+              f"📌 **{info.get('file_name', 'Bot')}**\n   ⚙️ PID:"
+              f" `{info.get('pid', 'N/A')}` | ⏱️ `{running_time}`\n\n"
+          )
+          markup.add(
+              InlineKeyboardButton(
+                  f"📋 Log: {info.get('file_name', 'Bot')}",
+                  callback_data=f"log_bot_{sid}",
+              ),
+              InlineKeyboardButton(
+                  f"🗑️ Durdur / Sil", callback_data=f"stop_bot_{sid}"
+              ),
+          )
       markup.add(
           InlineKeyboardButton("🔙 Ana Menü", callback_data="back_to_main_user")
       )
       bot.send_message(user_id, text, reply_markup=markup, parse_mode="Markdown")
 
 
-atexit.register(
-    lambda: [stop_all_user_scripts(int(uid)) for uid in list(user_data.keys())]
-)
+# --- SİSTEM AÇILIŞINDA KULLANICI BOTLARINI OTOMATİK YENİDEN BAŞLAT ---
+def restore_user_scripts():
+  print("🔄 Kayıtlı kullanıcı botları kontrol ediliyor ve yeniden başlatılıyor...")
+  for uid, scripts in list(user_data.items()):
+    if not isinstance(scripts, dict):
+      continue
+    for sid, info in list(scripts.items()):
+      if not isinstance(info, dict):
+        del user_data[uid][sid]
+        continue
+
+      file_path = info.get("file")
+      if file_path and os.path.exists(file_path):
+        try:
+          log_path = info.get("log_file", file_path + ".log")
+          with open(log_path, "w", encoding="utf-8") as log_file:
+            proc = subprocess.Popen(
+                [sys.executable, file_path],
+                stdout=log_file,
+                stderr=log_file,
+                text=True,
+            )
+          user_data[uid][sid]["pid"] = proc.pid
+          print(
+              f"✅ Geri Yüklendi: {info.get('file_name', 'Bot')} (Kullanıcı:"
+              f" {uid}, Yeni PID: {proc.pid})"
+          )
+        except Exception as e:
+          print(f"❌ Bot başlatılamadı ({info.get('file_name', 'Bot')}): {e}")
+      else:
+        if sid in user_data[uid]:
+          del user_data[uid][sid]
+  save_data()
+
 
 print("VDS Çoklu Bot Paneli aktif ve çalışıyor.")
 
 # Flask sunucusunu arka planda başlatıyoruz
 keep_alive()
+
+# Program açıldığında kayıtlı botları otomatik ayağa kaldır
+restore_user_scripts()
 
 try:
   bot.remove_webhook()
